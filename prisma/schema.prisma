@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  phone         String?
+  password      String
+  role          UserRole       @default(USER)
+  avatar        String?
+  location      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  reviews       Review[]
+  notifications Notification[]
+}
+
+model Driver {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  phone         String
+  password      String
+  avatar        String?
+  orgName       String?
+  orgType       OrgType        @default(INDIVIDUAL)
+  address       String?
+  city          String?
+  state         String?
+  pincode       String?
+  isVerified    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  vehicles      Vehicle[]
+  bookings      Booking[]
+  payments      Payment[]
+  notifications Notification[]
+}
+
+model Vehicle {
+  id                   String    @id @default(cuid())
+  driverId             String
+  driver               Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicleNumber        String    @unique
+  vehicleType          String
+  capacity             String
+  tankSize             String?
+  model                String?
+  year                 Int?
+  photos               String[]
+  description          String?
+  serviceAreas         String[]
+  services             String[]  @default([])
+  isActive             Boolean   @default(true)
+  googleFormLink       String?
+  bookingFormQuestions Json      @default("[]")
+  planType             PlanType  @default(MONTHLY)
+  planStartDate        DateTime  @default(now())
+  planEndDate          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  bookings             Booking[]
+  reviews              Review[]
+}
+
+model Booking {
+  id           String   @id @default(cuid())
+  vehicleId    String
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driverId     String
+  driver       Driver   @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  customerName  String?
+  customerPhone String?
+  
+  area         String?
+  city          String?
+  cost         Float    @default(0)
+  fuelExpense  Float    @default(0)
+  driverSalary Float    @default(0)
+  otherExpense Float    @default(0)
+  notes        String?
+  status       String   @default("COMPLETED")
+  completedAt  DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  driverId      String
+  driver        Driver        @relation(fields: [driverId], references: [id])
+  amount        Float
+  vehicleCount  Int
+  planType      PlanType
+  status        PaymentStatus @default(PENDING)
+  periodStart   DateTime
+  periodEnd     DateTime
+  transactionId String?
+  createdAt     DateTime      @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  driverId  String?
+  user      User?    @relation(fields: [userId], references: [id])
+  driver    Driver?  @relation(fields: [driverId], references: [id])
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  type      String   @default("info")
+  createdAt DateTime @default(now())
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum OrgType {
+  INDIVIDUAL
+  ORGANIZATION
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PlanType {
+  MONTHLY
+  ANNUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  BYPASSED
+}
